@@ -7,22 +7,32 @@ if (window.ScrollToPlugin) {
 const sections = gsap.utils.toArray("section");
 const artSections = gsap.utils.toArray("section[data-mode]");
 const navContainer = document.getElementById("progress-nav");
+const navIndicator = navContainer ? navContainer.querySelector(".nav-indicator") : null;
 const glow = document.getElementById("transition-glow");
-const tickerText = document.getElementById("ticker-text");
-const previewLinks = gsap.utils.toArray(".preview-link");
-const regenerateMolnarBtn = document.getElementById("regenerate-molnar-btn");
+const roseControls = document.getElementById("rose-controls");
 const scribbleControls = document.getElementById("scribble-controls");
-const scribbleRandomnessInput = document.getElementById("scribble-randomness");
+const fractalControls = document.getElementById("fractal-controls");
+const resonatorControls = document.getElementById("resonator-controls");
+const changeResonatorCurveBtn = document.getElementById("change-resonator-curve");
+const resonatorCurveName = document.getElementById("resonator-curve-name");
+const resonatorHueInput = document.getElementById("resonator-hue");
+const resonatorHueValue = document.getElementById("resonator-hue-value");
+const roseCoolHueInput = document.getElementById("rose-cool-hue");
+const roseWarmHueInput = document.getElementById("rose-warm-hue");
+const roseCoolHueValue = document.getElementById("rose-cool-hue-value");
+const roseWarmHueValue = document.getElementById("rose-warm-hue-value");
 const scribbleDensityInput = document.getElementById("scribble-density");
 const scribbleTextureInput = document.getElementById("scribble-texture");
-const scribbleRandomnessValue = document.getElementById("scribble-randomness-value");
+const scribbleTiltInput = document.getElementById("scribble-tilt");
+const scribbleOpacityInput = document.getElementById("scribble-opacity");
 const scribbleDensityValue = document.getElementById("scribble-density-value");
 const scribbleTextureValue = document.getElementById("scribble-texture-value");
+const scribbleTiltValue = document.getElementById("scribble-tilt-value");
+const scribbleOpacityValue = document.getElementById("scribble-opacity-value");
 const introSection = document.getElementById("intro");
 const introTitle = document.getElementById("intro-title");
 const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-// --- Panel Parallax Logic ---
 window.addEventListener("mousemove", (e) => {
   if (prefersReducedMotion()) return;
   const xPercent = (e.clientX / window.innerWidth - 0.5) * 2;
@@ -65,27 +75,6 @@ window.updateCaptionFx = (title, desc) => {
   });
 };
 
-// --- Magnetic Effect Logic ---
-previewLinks.forEach(link => {
-  link.addEventListener("mousemove", (e) => {
-    const rect = link.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    gsap.to(link, {
-      x: x * 0.3,
-      y: y * 0.3,
-      rotateX: -y * 0.1,
-      rotateY: x * 0.1,
-      duration: 0.4,
-      ease: "power2.out"
-    });
-  });
-  link.addEventListener("mouseleave", () => {
-    gsap.to(link, { x: 0, y: 0, rotateX: 0, rotateY: 0, duration: 0.6, ease: "elastic.out(1, 0.3)" });
-  });
-});
-
-// --- Intro Title Parallax ---
 window.addEventListener("mousemove", (e) => {
   if (prefersReducedMotion()) return;
   const xPercent = (e.clientX / window.innerWidth - 0.5) * 2;
@@ -107,15 +96,14 @@ let activeMode = 0;
 let introTitleFloatTween = null;
 let navScrollTween = null;
 let navJumpTargetId = null;
+let lastSectionSwitchAt = 0;
+let scrollStepLockUntil = 0;
 let introTitleChars = [];
 const navLinks = [];
-const starProgressStops = [];
-const svgNS = "http://www.w3.org/2000/svg";
-let constellationFluidRect = null;
-let constellationFluidWave = null;
-let constellationBarBottom = 0;
-let constellationBarHeight = 0;
+const SECTION_SWITCH_COOLDOWN_MS = 260;
+const SCROLL_STEP_LOCK_MS = 420;
 const prefersReducedMotion = () => reducedMotionQuery.matches;
+const transitionPulseState = { value: 0 };
 const MOTION = {
   fast: prefersReducedMotion() ? 0.12 : 0.3,
   medium: prefersReducedMotion() ? 0.2 : 0.65,
@@ -195,7 +183,7 @@ function animateIntroTitle() {
     );
 
   if (introTitle.dataset.glitchBound !== "true") {
-    // Hover-triggered shake effect for the intro title.
+    // Shake effect for the title.
     introTitle.addEventListener("mouseenter", () => {
       gsap.to(introTitleChars, {
         x: () => (Math.random() - 0.5) * 10,
@@ -219,115 +207,49 @@ function animateIntroTitle() {
   });
 }
 
-function stopPreviewRailAnimation() {
-  if (previewLinks.length) {
-    gsap.killTweensOf(previewLinks);
-    gsap.set(previewLinks, { autoAlpha: 1, y: 0, scale: 1, filter: "none" });
-  }
-}
+function setupNavSheen() {
+  const links = gsap.utils.toArray("#progress-nav .nav-labels a");
+  if (!links.length) return;
 
-function animatePreviewRail() {
-  if (!previewLinks.length) return;
-  stopPreviewRailAnimation();
-
-  if (prefersReducedMotion()) {
-    return;
-  }
-
-  gsap.fromTo(
-    previewLinks,
-    { autoAlpha: 0, y: 18, scale: 0.98, filter: "blur(4px)" },
-    {
-      autoAlpha: 1,
-      y: 0,
-      scale: 1,
-      filter: "blur(0px)",
-      duration: 0.52,
-      ease: "power2.out",
-      stagger: 0.045
+  links.forEach((link) => {
+    let sheen = link.querySelector(".nav-sheen");
+    if (!sheen) {
+      sheen = document.createElement("span");
+      sheen.classList.add("nav-sheen");
+      link.appendChild(sheen);
     }
-  );
-}
+    gsap.set(sheen, { xPercent: -150, opacity: 0, skewX: -18 });
 
-function setupPreviewSheen() {
-  if (!previewLinks.length) return;
-
-  const createPreviewSvg = (width, height, className, childType, childAttributes) => {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.classList.add(className);
-    svg.setAttributeNS("http://www.w3.org/2000/svg", "viewBox", `0 0 ${width} ${height}`);
-    const child = document.createElementNS("http://www.w3.org/2000/svg", childType);
-    for (const attr in childAttributes) {
-      child.setAttribute(attr, childAttributes[attr]);
-    }
-    svg.appendChild(child);
-    return { svg, child };
-  };
-
-  previewLinks.forEach(link => {
-    const sheen = link.querySelector(".preview-sheen");
-    if (!sheen) return;
-    gsap.set(sheen, { xPercent: -140, opacity: 0, skewX: -16 });
-
-    if (!link.dataset.fxReady) {
-      const width = Math.max(72, Math.round(link.offsetWidth));
-      const height = Math.max(42, Math.round(link.offsetHeight));
-      const radius = Math.max(8, parseInt(getComputedStyle(link).borderRadius, 10) || 10);
-
-      const strokeGroup = document.createElement("div");
-      strokeGroup.classList.add("preview-stroke");
-      const { svg: strokeSvg } = createPreviewSvg(width, height, "stroke-line", "rect", {
-        x: "0",
-        y: "0",
-        width: "100%",
-        height: "100%",
-        rx: radius,
-        ry: radius,
-        pathLength: "10"
-      });
-      const strokeClone = strokeSvg.cloneNode(true);
-      strokeGroup.appendChild(strokeSvg);
-      strokeGroup.appendChild(strokeClone);
-      link.appendChild(strokeGroup);
-      link.dataset.fxReady = "true";
-    }
+    if (link.dataset.navSheenReady === "true") return;
+    link.dataset.navSheenReady = "true";
 
     link.addEventListener("pointerenter", () => {
       if (prefersReducedMotion()) return;
-      link.classList.add("fx-active");
       gsap.killTweensOf(sheen);
       gsap.fromTo(
         sheen,
-        { xPercent: -140, opacity: 0, skewX: -16 },
+        { xPercent: -220, opacity: 0, skewX: -18 },
         {
-          xPercent: 180,
-          skewX: -16,
-          duration: 1.1,
+          xPercent: 240,
+          skewX: -18,
+          duration: 1.05,
           ease: "power2.out",
           keyframes: [
             { opacity: 0.0, duration: 0.0 },
-            { opacity: 0.9, duration: 0.32, ease: "power2.out" },
-            { opacity: 0.0, duration: 0.78, ease: "power2.out" }
+            { opacity: 1, duration: 0.28, ease: "power2.out" },
+            { opacity: 0.0, duration: 0.77, ease: "power2.out" }
           ]
         }
       );
     });
 
     link.addEventListener("pointerleave", () => {
-      link.classList.remove("fx-active");
       gsap.killTweensOf(sheen);
-      gsap.to(sheen, { opacity: 0, duration: 0.2, ease: "power2.out" });
+      gsap.to(sheen, { opacity: 0, duration: 0.14, ease: "power2.out" });
     });
   });
 }
 
-
-function buildConstellationPoints(progressStops, barY, barHeight, trackX) {
-  return progressStops.map((stop) => ({
-    x: trackX,
-    y: barY + gsap.utils.clamp(0, 1, stop) * barHeight
-  }));
-}
 
 function getScrollMax() {
   const docMax = (document.documentElement.scrollHeight || 0) - window.innerHeight;
@@ -342,11 +264,6 @@ function getSectionNavTargetTop(section) {
   return gsap.utils.clamp(0, maxScroll, anchorTop);
 }
 
-function getSectionNavProgress(section) {
-  const maxScroll = getScrollMax();
-  return gsap.utils.clamp(0, 1, getSectionNavTargetTop(section) / maxScroll);
-}
-
 function getNavProgressFromScroll(scrollY) {
   if (!artSections.length) return 0;
   const y = Number(scrollY) || 0;
@@ -355,312 +272,98 @@ function getNavProgressFromScroll(scrollY) {
 }
 
 function setConstellationProgress(percent) {
-  if (!constellationFluidRect || !constellationFluidWave) return;
   const bounded = gsap.utils.clamp(0, 1, percent);
-  const fluidHeight = Math.max(0, constellationBarHeight * bounded);
-  const topY = constellationBarBottom - constellationBarHeight;
-  const frontierY = topY + fluidHeight;
-  constellationFluidRect.setAttribute("y", String(topY));
-  constellationFluidRect.setAttribute("height", String(fluidHeight));
-
-  if (fluidHeight <= 0.5) {
-    constellationFluidWave.setAttribute("d", "");
+  if (!navIndicator) return;
+  if (prefersReducedMotion()) {
+    gsap.set(navIndicator, { height: `${bounded * 100}%` });
     return;
   }
-
-  const waveY = frontierY;
-  const leftX = Number(constellationFluidRect.getAttribute("x"));
-  const barWidth = Number(constellationFluidRect.getAttribute("width"));
-  const rightX = leftX + barWidth;
-  const d = `M ${leftX} ${waveY} L ${rightX} ${waveY}`;
-  constellationFluidWave.setAttribute("d", d);
+  gsap.to(navIndicator, {
+    height: `${bounded * 100}%`,
+    duration: 0.2,
+    ease: "power2.out",
+    overwrite: true
+  });
 }
 
 function pingStar(star) {
   if (!star || prefersReducedMotion()) return;
-  const core = star.querySelector(".star-core");
-  const orbit = star.querySelector(".star-orbit");
-  if (!core) return;
-  
-  gsap.killTweensOf([core, orbit]);
-  
-  // Smooth elastic pop for the inner core
-  gsap.fromTo(
-    core,
-    { scale: 0.8 },
-    { scale: 1.25, duration: 0.8, ease: "elastic.out(1.2, 0.4)", transformOrigin: "center" }
+  gsap.to(
+    star,
+    {
+      scale: 1.15,
+      duration: 0.4,
+      ease: "power2.out",
+      overwrite: true,
+      textShadow: "0px 0px 8px rgba(255,255,255,0.6)",
+      transformOrigin: "left center"
+    }
   );
-
-  if (orbit) {
-    // Elegant ring expansion
-    gsap.fromTo(
-      orbit,
-      { scale: 0.5, opacity: 0 },
-      { scale: 1.15, opacity: 1, duration: 0.8, ease: "power2.out", transformOrigin: "center" }
-    );
-  }
 }
 
 function buildConstellationNav() {
   if (!navContainer) return;
-  navContainer.innerHTML = "";
   navLinks.length = 0;
-  starProgressStops.length = 0;
-
-  const width = 110;
-  const height = 550;
-  const barWidth = 34; // Wider polished bar
-  const barHeight = height - 68;
-  const barX = Math.round((width - barWidth) / 2);
-  const barY = 34;
-  const barRadius = 17; // Perfect pill shape
-  const trackCenterX = barX + barWidth / 2;
-  const progressStops = artSections.map((section) => getSectionNavProgress(section));
-  const points = buildConstellationPoints(progressStops, barY, barHeight, trackCenterX);
-
-  const svg = document.createElementNS(svgNS, "svg");
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  svg.setAttribute("class", "constellation-map");
-  svg.setAttribute("aria-hidden", "true");
-
-  const defs = document.createElementNS(svgNS, "defs");
-  const gradientId = "fluid-gradient";
-  const gradient = document.createElementNS(svgNS, "linearGradient");
-  gradient.setAttribute("id", gradientId);
-  gradient.setAttribute("x1", "0%");
-  gradient.setAttribute("y1", "100%");
-  gradient.setAttribute("x2", "0%");
-  gradient.setAttribute("y2", "0%");
-  const stop1 = document.createElementNS(svgNS, "stop");
-  stop1.setAttribute("offset", "0%");
-  stop1.setAttribute("style", "stop-color: #2EC4B6; stop-opacity: 0.95");
-  const stop2 = document.createElementNS(svgNS, "stop");
-  stop2.setAttribute("offset", "45%");
-  stop2.setAttribute("style", "stop-color: #4CC9F0; stop-opacity: 0.96");
-  const stop3 = document.createElementNS(svgNS, "stop");
-  stop3.setAttribute("offset", "100%");
-  stop3.setAttribute("style", "stop-color: #F72585; stop-opacity: 0.92");
-  gradient.appendChild(stop1);
-  gradient.appendChild(stop2);
-  gradient.appendChild(stop3);
-  
-  if (!prefersReducedMotion()) {
-    const animate = document.createElementNS(svgNS, "animateTransform");
-    animate.setAttribute("attributeName", "gradientTransform");
-    animate.setAttribute("type", "translate");
-    animate.setAttribute("values", "0 0; 0 -24; 0 0");
-    animate.setAttribute("dur", "5.6s");
-    animate.setAttribute("repeatCount", "indefinite");
-    gradient.appendChild(animate);
-  }
-
-  const clipPath = document.createElementNS(svgNS, "clipPath");
-  const clipId = "bar-fluid-clip";
-  clipPath.setAttribute("id", clipId);
-  const clipRect = document.createElementNS(svgNS, "rect");
-  clipRect.setAttribute("x", String(barX));
-  clipRect.setAttribute("y", String(barY));
-  clipRect.setAttribute("width", String(barWidth));
-  clipRect.setAttribute("height", String(barHeight));
-  clipRect.setAttribute("rx", String(barRadius));
-  clipRect.setAttribute("ry", String(barRadius));
-  clipPath.appendChild(clipRect);
-
-  defs.appendChild(gradient);
-  defs.appendChild(clipPath);
-  svg.appendChild(defs);
-
-  // Outer glassmorphism casing
-  const trackBorderOuter = document.createElementNS(svgNS, "rect");
-  trackBorderOuter.setAttribute("class", "constellation-track-border-outer");
-  trackBorderOuter.setAttribute("x", String(barX - 7));
-  trackBorderOuter.setAttribute("y", String(barY - 7));
-  trackBorderOuter.setAttribute("width", String(barWidth + 14));
-  trackBorderOuter.setAttribute("height", String(barHeight + 14));
-  trackBorderOuter.setAttribute("rx", String(barRadius + 7));
-  trackBorderOuter.setAttribute("ry", String(barRadius + 7));
-
-  const trackFill = document.createElementNS(svgNS, "rect");
-  trackFill.setAttribute("class", "constellation-track-fill");
-  trackFill.setAttribute("x", String(barX));
-  trackFill.setAttribute("y", String(barY));
-  trackFill.setAttribute("width", String(barWidth));
-  trackFill.setAttribute("height", String(barHeight));
-  trackFill.setAttribute("rx", String(barRadius));
-  trackFill.setAttribute("ry", String(barRadius));
-
-  const fluidLayer = document.createElementNS(svgNS, "g");
-  fluidLayer.setAttribute("class", "constellation-fluid-layer");
-  fluidLayer.setAttribute("clip-path", `url(#${clipId})`);
-
-  const fluidRect = document.createElementNS(svgNS, "rect");
-  fluidRect.setAttribute("class", "constellation-fluid-fill");
-  fluidRect.setAttribute("x", String(barX));
-  fluidRect.setAttribute("y", String(barY));
-  fluidRect.setAttribute("width", String(barWidth));
-  fluidRect.setAttribute("height", "0");
-  fluidRect.setAttribute("fill", `url(#${gradientId})`);
-
-  const fluidWave = document.createElementNS(svgNS, "path");
-  fluidWave.setAttribute("class", "constellation-fluid-wave");
-  fluidWave.setAttribute("d", "");
-
-  fluidLayer.appendChild(fluidRect);
-  fluidLayer.appendChild(fluidWave);
-
-  const trackBorder = document.createElementNS(svgNS, "rect");
-  trackBorder.setAttribute("class", "constellation-track-border");
-  trackBorder.setAttribute("x", String(barX));
-  trackBorder.setAttribute("y", String(barY));
-  trackBorder.setAttribute("width", String(barWidth));
-  trackBorder.setAttribute("height", String(barHeight));
-  trackBorder.setAttribute("rx", String(barRadius));
-  trackBorder.setAttribute("ry", String(barRadius));
-
-  svg.appendChild(trackBorderOuter);
-  svg.appendChild(trackFill);
-  svg.appendChild(fluidLayer);
-  svg.appendChild(trackBorder);
-
-  artSections.forEach((section, index) => {
-    const point = points[index];
-    const ratio = progressStops[index];
-    const group = document.createElementNS(svgNS, "g");
-    group.setAttribute("class", "star-node");
-    group.setAttribute("transform", `translate(${point.x} ${point.y})`);
-    group.dataset.sectionId = section.id;
-    group.dataset.progress = String(ratio);
-    group.setAttribute("role", "button");
-    group.setAttribute("tabindex", "0");
-    group.setAttribute("aria-label", section.dataset.label || `Study ${index + 1}`);
-
-    const halo = document.createElementNS(svgNS, "circle");
-    halo.setAttribute("class", "star-halo");
-    halo.setAttribute("cx", "0");
-    halo.setAttribute("cy", "0");
-    halo.setAttribute("r", "20"); // Expanded hover area
-
-    const orbit = document.createElementNS(svgNS, "circle");
-    orbit.setAttribute("class", "star-orbit");
-    orbit.setAttribute("cx", "0");
-    orbit.setAttribute("cy", "0");
-    orbit.setAttribute("r", "15"); // Solid highlight ring
-
-    const core = document.createElementNS(svgNS, "circle");
-    core.setAttribute("class", "star-core");
-    core.setAttribute("cx", "0");
-    core.setAttribute("cy", "0");
-    core.setAttribute("r", "7.5"); // Sleeker core dot
-
-    const core2 = document.createElementNS(svgNS, "circle");
-    core2.setAttribute("class", "star-core2");
-    core2.setAttribute("cx", "0");
-    core2.setAttribute("cy", "0");
-    core2.setAttribute("r", "3"); // Tiny center highlight
-
-    group.appendChild(halo);
-    group.appendChild(orbit);
-    group.appendChild(core);
-    group.appendChild(core2);
-    svg.appendChild(group);
-    navLinks.push(group);
-    starProgressStops.push(ratio);
-
-    const clickHandler = (event) => {
+  const links = gsap.utils.toArray("#progress-nav .nav-labels a");
+  links.forEach((link) => {
+    navLinks.push(link);
+    if (link.dataset.boundNavClick === "true") return;
+    link.dataset.boundNavClick = "true";
+    link.addEventListener("click", (event) => {
       event.preventDefault();
-      const targetId = group.dataset.sectionId;
+      const targetId = (link.getAttribute("href") || "").replace("#", "");
       if (!targetId) return;
-      setActiveNav(targetId);
-      const sectionIndex = sections.findIndex(currentSection => currentSection.id === targetId);
-      scrollToSectionIndex(sectionIndex, targetId);
-    };
-    group.addEventListener("click", clickHandler);
-    group.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        clickHandler(event);
+      const targetSection = document.getElementById(targetId);
+      if (targetSection && targetSection.dataset && targetSection.dataset.mode) {
+        activateSection(targetSection, { force: true, source: "nav" });
       }
+      setActiveNav(targetId);
+      const sectionIndex = sections.findIndex((section) => section.id === targetId);
+      if (sectionIndex < 0) return;
+      scrollToSectionIndex(sectionIndex, targetId);
     });
   });
-
-  navContainer.appendChild(svg);
-  constellationFluidRect = fluidRect;
-  constellationFluidWave = fluidWave;
-  constellationBarBottom = barY + barHeight;
-  constellationBarHeight = barHeight;
-
-  if (!prefersReducedMotion()) {
-    gsap.fromTo(
-      gradient,
-      { attr: { y1: "100%", y2: "0%" } },
-      {
-        attr: { y1: "110%", y2: "-10%" },
-        duration: 5.5,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut"
-      }
-    );
-    gsap.fromTo(
-      svg,
-      { autoAlpha: 0, y: 20, filter: "blur(6px)" },
-      { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.75, ease: "power3.out" }
-    );
-  }
-  setConstellationProgress(0);
+  setConstellationProgress(getNavProgressFromScroll(window.scrollY));
 }
 
 
 function setArtworkContrastMode(modeNumber) {
-  document.body.classList.toggle("light-artwork", modeNumber === 7 || modeNumber === 8 || modeNumber === 10);
+  document.body.classList.toggle("light-artwork", modeNumber === 8 || modeNumber === 10);
+}
+
+function hideInfoPanelForIntro() {
+  if (window.updateCaptionFx) {
+    window.updateCaptionFx("", "");
+  }
 }
 
 function setActiveNav(id) {
   navLinks.forEach((link) => {
-    const isActive = Boolean(id) && link.dataset.sectionId === id;
+    const targetId = (link.getAttribute("href") || "").replace("#", "");
+    const isActive = Boolean(id) && targetId === id;
     link.classList.toggle("active", isActive);
     if (isActive) {
       link.setAttribute("aria-current", "true");
       pingStar(link);
     } else {
       link.removeAttribute("aria-current");
-    }
-  });
-}
-
-function setActivePreview(id) {
-  previewLinks.forEach(link => {
-    const isActive = link.dataset.target === id;
-    link.classList.toggle("active", isActive);
-  });
-}
-
-function updateTicker(section) {
-  if (!section || !tickerText) return;
-  const newLabel = section.dataset.label || section.id || "Live";
-
-  if (prefersReducedMotion()) {
-    tickerText.textContent = newLabel;
-    return;
-  }
-
-  gsap.to(tickerText, {
-    opacity: 0,
-    x: -12,
-    duration: 0.18,
-    ease: "power2.in",
-    onComplete: () => {
-      tickerText.textContent = newLabel;
-      gsap.fromTo(tickerText,
-        { opacity: 0, x: 12 },
-        { opacity: 1, x: 0, duration: 0.35, ease: "power2.out" }
-      );
+      gsap.to(link, {
+        scale: 1,
+        duration: 0.35,
+        ease: "power2.out",
+        overwrite: true,
+        textShadow: "0px 0px 0px rgba(255,255,255,0)"
+      });
     }
   });
 }
 
 function setReachedDots(percent) {
-  navLinks.forEach((link, index) => {
-    const stop = starProgressStops[index] || Number(link.dataset.progress || 0);
+  navLinks.forEach((link) => {
+    const targetId = (link.getAttribute("href") || "").replace("#", "");
+    const targetSection = targetId ? document.getElementById(targetId) : null;
+    if (!targetSection) return;
+    const stop = getNavProgressFromScroll(getSectionNavTargetTop(targetSection));
     link.classList.toggle("reached", percent >= stop);
   });
   setConstellationProgress(percent);
@@ -669,6 +372,18 @@ function setReachedDots(percent) {
 function runModeTransitionFx() {
   const reduced = prefersReducedMotion();
   const tl = gsap.timeline();
+
+  if (window.setTransitionPulse) {
+    gsap.killTweensOf(transitionPulseState);
+    transitionPulseState.value = reduced ? 0.55 : 1;
+    window.setTransitionPulse(transitionPulseState.value);
+    gsap.to(transitionPulseState, {
+      value: 0,
+      duration: reduced ? 0.2 : 0.55,
+      ease: "power2.out",
+      onUpdate: () => window.setTransitionPulse(transitionPulseState.value)
+    });
+  }
 
   tl.fromTo(
     "#canvas-container",
@@ -696,53 +411,182 @@ function runModeTransitionFx() {
   );
 }
 
-function syncScribbleControlLabels() {
-  if (!scribbleRandomnessInput || !scribbleDensityInput || !scribbleTextureInput) return;
-  if (scribbleRandomnessValue) {
-    scribbleRandomnessValue.textContent = `${scribbleRandomnessInput.value}%`;
+function syncRoseControlLabels() {
+  if (!roseCoolHueInput || !roseWarmHueInput) return;
+  if (roseCoolHueValue) {
+    roseCoolHueValue.textContent = roseCoolHueInput.value;
   }
+  if (roseWarmHueValue) {
+    roseWarmHueValue.textContent = roseWarmHueInput.value;
+  }
+}
+
+function applyRoseControlValues() {
+  if (!roseCoolHueInput || !roseWarmHueInput) return;
+  if (!window.setRosePalette) return;
+  window.setRosePalette({
+    coolHue: Number(roseCoolHueInput.value),
+    warmHue: Number(roseWarmHueInput.value)
+  });
+}
+
+function syncScribbleControlLabels() {
+  if (!scribbleDensityInput || !scribbleTextureInput || !scribbleTiltInput || !scribbleOpacityInput) return;
   if (scribbleDensityValue) {
     scribbleDensityValue.textContent = scribbleDensityInput.value;
   }
   if (scribbleTextureValue) {
     scribbleTextureValue.textContent = scribbleTextureInput.value;
   }
+  if (scribbleTiltValue) {
+    scribbleTiltValue.textContent = `${scribbleTiltInput.value}%`;
+  }
+  if (scribbleOpacityValue) {
+    scribbleOpacityValue.textContent = scribbleOpacityInput.value;
+  }
 }
 
 function applyScribbleControlValues() {
-  if (!scribbleRandomnessInput || !scribbleDensityInput || !scribbleTextureInput) return;
+  if (!scribbleDensityInput || !scribbleTextureInput || !scribbleTiltInput || !scribbleOpacityInput) return;
   if (!window.setScribbleGridParams) return;
   window.setScribbleGridParams({
-    randomness: Number(scribbleRandomnessInput.value) / 100,
     density: Number(scribbleDensityInput.value),
-    texture: Number(scribbleTextureInput.value)
+    texture: Number(scribbleTextureInput.value),
+    tilt: Number(scribbleTiltInput.value) / 100,
+    opacity: Number(scribbleOpacityInput.value)
   });
   if (window.regenerateScribbleGrid) {
     window.regenerateScribbleGrid();
   }
 }
 
-function activateSection(section) {
+function syncResonatorCurveLabel() {
+  if (!resonatorCurveName) return;
+  if (!window.getResonatorCurveLabel) return;
+  resonatorCurveName.textContent = window.getResonatorCurveLabel();
+}
+
+function syncResonatorHueLabel() {
+  if (!resonatorHueInput || !resonatorHueValue) return;
+  resonatorHueValue.textContent = resonatorHueInput.value;
+}
+
+function applyResonatorHueValue() {
+  if (!resonatorHueInput) return;
+  if (!window.setResonatorHue) return;
+  window.setResonatorHue(Number(resonatorHueInput.value));
+}
+
+function playResonatorCurveButtonShine(event) {
+  if (!changeResonatorCurveBtn || !event) return;
+  const rect = changeResonatorCurveBtn.getBoundingClientRect();
+  const localX = typeof event.clientX === "number" ? event.clientX - rect.left : rect.width / 2;
+  const localY = typeof event.clientY === "number" ? event.clientY - rect.top : rect.height / 2;
+  const clampedX = gsap.utils.clamp(0, rect.width, localX);
+  const clampedY = gsap.utils.clamp(0, rect.height, localY);
+
+  const shine = document.createElement("span");
+  shine.className = "resonator-curve-btn-shine";
+  shine.style.left = `${clampedX}px`;
+  shine.style.top = `${clampedY}px`;
+  changeResonatorCurveBtn.appendChild(shine);
+
+  const shineBaseSize = parseFloat(getComputedStyle(shine).width) || 26;
+  const maxDistanceToCorner = Math.max(
+    Math.hypot(clampedX, clampedY),
+    Math.hypot(rect.width - clampedX, clampedY),
+    Math.hypot(clampedX, rect.height - clampedY),
+    Math.hypot(rect.width - clampedX, rect.height - clampedY)
+  );
+  const fullCoverScale = Math.max(1.2, (maxDistanceToCorner * 2 * 1.1) / shineBaseSize);
+
+  gsap.set(shine, {
+    xPercent: -50,
+    yPercent: -50,
+    scale: 0.08,
+    opacity: 0
+  });
+
+  if (prefersReducedMotion()) {
+    gsap.to(shine, {
+      opacity: 0,
+      duration: 0.18,
+      ease: "power1.out",
+      onStart: () => gsap.set(shine, { opacity: 0.22 }),
+      onComplete: () => shine.remove()
+    });
+    return;
+  }
+
+  gsap.to(shine, {
+    scale: fullCoverScale,
+    duration: 0.45,
+    ease: "power2.out",
+    keyframes: [
+      { opacity: 0.58, duration: 0.08, ease: "power2.out" },
+      { opacity: 0, duration: 0.37, ease: "power2.out" }
+    ],
+    overwrite: "auto",
+    onComplete: () => shine.remove()
+  });
+}
+
+function activateSection(section, options = {}) {
+  const { force = false, source = "scroll" } = options;
+  const now = performance.now();
+  if (!force && source === "scroll" && now - lastSectionSwitchAt < SECTION_SWITCH_COOLDOWN_MS) {
+    return;
+  }
+  if (!force && source === "scroll" && now < scrollStepLockUntil) {
+    return;
+  }
+
+  const targetSectionIndex = sections.findIndex((s) => s === section);
+  const activeSectionIndex = sections.findIndex((s) => Number(s.dataset.mode) === activeMode);
+  if (
+    !force &&
+    source === "scroll" &&
+    targetSectionIndex >= 0 &&
+    activeSectionIndex >= 0
+  ) {
+    const delta = targetSectionIndex - activeSectionIndex;
+    if (Math.abs(delta) > 1) {
+      const steppedIndex = activeSectionIndex + Math.sign(delta);
+      scrollToSectionIndex(steppedIndex, sections[steppedIndex] ? sections[steppedIndex].id : null);
+      return;
+    }
+  }
+
   const newMode = Number(section.dataset.mode);
 
   if (!Number.isNaN(newMode) && newMode !== activeMode) {
     changeMode(newMode);
     activeMode = newMode;
+    lastSectionSwitchAt = now;
+    if (source === "scroll") {
+      scrollStepLockUntil = now + (prefersReducedMotion() ? 140 : SCROLL_STEP_LOCK_MS);
+    }
     setArtworkContrastMode(activeMode);
     runModeTransitionFx();
   }
 
   sections.forEach(s => s.classList.remove("active"));
   section.classList.add("active");
-  stopPreviewRailAnimation();
   setActiveNav(section.id);
-  setActivePreview(section.id);
-  updateTicker(section);
-  if (regenerateMolnarBtn) {
-    regenerateMolnarBtn.classList.toggle("visible", section.id === "s7");
+  if (roseControls) {
+    roseControls.classList.toggle("visible", section.id === "s7");
   }
   if (scribbleControls) {
     scribbleControls.classList.toggle("visible", section.id === "s8");
+  }
+  if (fractalControls) {
+    fractalControls.classList.toggle("visible", section.id === "s4");
+  }
+  if (resonatorControls) {
+    resonatorControls.classList.toggle("visible", section.id === "s1");
+    if (section.id === "s1") {
+      syncResonatorCurveLabel();
+    }
   }
 }
 
@@ -773,18 +617,22 @@ function scrollToSectionIndex(index, targetId = null) {
   }
   if (window.ScrollToPlugin) {
     navScrollTween = gsap.to(window, {
-      scrollTo: { y: targetTop, autoKill: true },
+      scrollTo: { y: targetTop, autoKill: false },
       duration: prefersReducedMotion() ? 0.01 : 0.68,
       ease: "power2.inOut",
       onComplete: () => {
         const targetSection = sections[bounded];
         navJumpTargetId = null;
         if (targetSection && targetSection.dataset && targetSection.dataset.mode) {
-          activateSection(targetSection);
+          activateSection(targetSection, { force: true, source: "nav" });
         }
         navScrollTween = null;
       },
       onInterrupt: () => {
+        const fallbackSection = sections[getCurrentSectionIndex()];
+        if (fallbackSection && fallbackSection.dataset && fallbackSection.dataset.mode) {
+          activateSection(fallbackSection, { force: true, source: "interrupt" });
+        }
         navJumpTargetId = null;
         navScrollTween = null;
       }
@@ -795,7 +643,7 @@ function scrollToSectionIndex(index, targetId = null) {
       const targetSection = sections[bounded];
       navJumpTargetId = null;
       if (targetSection && targetSection.dataset && targetSection.dataset.mode) {
-        activateSection(targetSection);
+        activateSection(targetSection, { force: true, source: "nav" });
       }
       return;
     }
@@ -811,11 +659,15 @@ function scrollToSectionIndex(index, targetId = null) {
         const targetSection = sections[bounded];
         navJumpTargetId = null;
         if (targetSection && targetSection.dataset && targetSection.dataset.mode) {
-          activateSection(targetSection);
+          activateSection(targetSection, { force: true, source: "nav" });
         }
         navScrollTween = null;
       },
       onInterrupt: () => {
+        const fallbackSection = sections[getCurrentSectionIndex()];
+        if (fallbackSection && fallbackSection.dataset && fallbackSection.dataset.mode) {
+          activateSection(fallbackSection, { force: true, source: "interrupt" });
+        }
         navJumpTargetId = null;
         navScrollTween = null;
       }
@@ -867,15 +719,15 @@ sections.forEach((section, i) => {
 artSections.forEach(section => {
   ScrollTrigger.create({
     trigger: section,
-    start: "top center",
-    end: "bottom center",
+    start: "top 35%",
+    end: "bottom 65%",
     onEnter: () => {
       if (navJumpTargetId && navJumpTargetId !== section.id) return;
-      activateSection(section);
+      activateSection(section, { source: "scroll" });
     },
     onEnterBack: () => {
       if (navJumpTargetId && navJumpTargetId !== section.id) return;
-      activateSection(section);
+      activateSection(section, { source: "scroll" });
     }
   });
 });
@@ -889,12 +741,12 @@ if (introSection) {
       if (navJumpTargetId) return;
       sections.forEach(s => s.classList.remove("active"));
       introSection.classList.add("active");
-      animatePreviewRail();
       setActiveNav("");
-      setActivePreview("");
-      updateTicker({ dataset: { label: "Front Page" }, id: "intro" });
-      if (regenerateMolnarBtn) regenerateMolnarBtn.classList.remove("visible");
+      hideInfoPanelForIntro();
+      if (roseControls) roseControls.classList.remove("visible");
       if (scribbleControls) scribbleControls.classList.remove("visible");
+      if (fractalControls) fractalControls.classList.remove("visible");
+      if (resonatorControls) resonatorControls.classList.remove("visible");
       if (activeMode !== 0) {
         changeMode(0);
         activeMode = 0;
@@ -906,12 +758,12 @@ if (introSection) {
       if (navJumpTargetId) return;
       sections.forEach(s => s.classList.remove("active"));
       introSection.classList.add("active");
-      animatePreviewRail();
       setActiveNav("");
-      setActivePreview("");
-      updateTicker({ dataset: { label: "Front Page" }, id: "intro" });
-      if (regenerateMolnarBtn) regenerateMolnarBtn.classList.remove("visible");
+      hideInfoPanelForIntro();
+      if (roseControls) roseControls.classList.remove("visible");
       if (scribbleControls) scribbleControls.classList.remove("visible");
+      if (fractalControls) fractalControls.classList.remove("visible");
+      if (resonatorControls) resonatorControls.classList.remove("visible");
       if (activeMode !== 0) {
         changeMode(0);
         activeMode = 0;
@@ -939,14 +791,18 @@ if (!prefersReducedMotion()) {
     snap: {
       snapTo: (value) => {
         if (navJumpTargetId) return value;
-        const currentIdx = getCurrentSectionIndex();
+        const activeSectionIndex = sections.findIndex((section) => Number(section.dataset.mode) === activeMode);
+        const currentIdx = activeSectionIndex >= 0 ? activeSectionIndex : getCurrentSectionIndex();
         const rawIdx = Math.round(value * (sections.length - 1));
         const boundedIdx = gsap.utils.clamp(currentIdx - 1, currentIdx + 1, rawIdx);
         const steps = sections.length - 1;
         return boundedIdx / steps;
       },
-      duration: MOTION.medium,
-      ease: MOTION.easeInOut
+      directional: true,
+      inertia: false,
+      delay: 0.08,
+      duration: { min: 0.16, max: 0.32 },
+      ease: "power2.out"
     }
   });
 }
@@ -956,18 +812,10 @@ reducedMotionQuery.addEventListener("change", (event) => {
     window.setReducedMotion(event.matches);
   }
   if (event.matches) {
-    gsap.set(".preview-sheen", { opacity: 0, xPercent: -140, skewX: -16 });
-    previewLinks.forEach(link => {
-      link.classList.remove("fx-active");
-    });
+    gsap.set(".nav-sheen", { opacity: 0, xPercent: -150, skewX: -18 });
   }
   animateIntroTitle();
   setConstellationProgress(getNavProgressFromScroll(window.scrollY));
-  if (introSection && introSection.classList.contains("active")) {
-    animatePreviewRail();
-  } else {
-    stopPreviewRailAnimation();
-  }
   ScrollTrigger.refresh();
 });
 
@@ -975,33 +823,63 @@ buildConstellationNav();
 splitIntroTitleChars();
 animateIntroTitle();
 setActiveNav("");
-setActivePreview("");
 setReachedDots(0);
-updateTicker({ dataset: { label: "Front Page" }, id: "intro" });
-setupPreviewSheen();
-if (regenerateMolnarBtn) {
-  regenerateMolnarBtn.classList.remove("visible");
-  regenerateMolnarBtn.addEventListener("click", () => {
-    if (window.regenerateMolnarStudy) {
-      window.regenerateMolnarStudy();
-    }
+setupNavSheen();
+if (roseControls && roseCoolHueInput && roseWarmHueInput) {
+  roseControls.classList.remove("visible");
+  if (window.getRosePalette) {
+    const initial = window.getRosePalette();
+    roseCoolHueInput.value = String(Math.round(initial.coolHue ?? 196));
+    roseWarmHueInput.value = String(Math.round(initial.warmHue ?? 338));
+  }
+  syncRoseControlLabels();
+  [roseCoolHueInput, roseWarmHueInput].forEach((input) => {
+    input.addEventListener("input", () => {
+      syncRoseControlLabels();
+      applyRoseControlValues();
+    });
   });
+  applyRoseControlValues();
 }
-if (scribbleControls && scribbleRandomnessInput && scribbleDensityInput && scribbleTextureInput) {
+if (scribbleControls && scribbleDensityInput && scribbleTextureInput && scribbleTiltInput && scribbleOpacityInput) {
   scribbleControls.classList.remove("visible");
   if (window.getScribbleGridParams) {
     const initial = window.getScribbleGridParams();
-    scribbleRandomnessInput.value = String(Math.round((initial.randomness || 0) * 100));
     scribbleDensityInput.value = String(initial.density || 120);
     scribbleTextureInput.value = String(initial.texture || 3000);
+    scribbleTiltInput.value = String(Math.round((initial.tilt || 1) * 100));
+    scribbleOpacityInput.value = String(initial.opacity || 36);
   }
   syncScribbleControlLabels();
-  [scribbleRandomnessInput, scribbleDensityInput, scribbleTextureInput].forEach((input) => {
+  [scribbleDensityInput, scribbleTextureInput, scribbleTiltInput, scribbleOpacityInput].forEach((input) => {
     input.addEventListener("input", () => {
       syncScribbleControlLabels();
       applyScribbleControlValues();
     });
   });
+}
+if (resonatorControls && changeResonatorCurveBtn) {
+  resonatorControls.classList.remove("visible");
+  syncResonatorCurveLabel();
+  changeResonatorCurveBtn.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    playResonatorCurveButtonShine(event);
+    if (!window.cycleResonatorCurve) return;
+    window.cycleResonatorCurve();
+    syncResonatorCurveLabel();
+  });
+}
+if (resonatorControls && resonatorHueInput) {
+  if (window.getResonatorHue) {
+    resonatorHueInput.value = String(Math.round(window.getResonatorHue()));
+  }
+  syncResonatorHueLabel();
+  resonatorHueInput.addEventListener("input", () => {
+    syncResonatorHueLabel();
+    applyResonatorHueValue();
+  });
+  applyResonatorHueValue();
 }
 changeMode(0);
 setArtworkContrastMode(0);

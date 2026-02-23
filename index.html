@@ -15,63 +15,75 @@
 <body>
   <div class="grain"></div>
   <div class="frame-lines"></div>
-  <div id="live-ticker" aria-live="polite">
-    <span id="ticker-text">Front Page</span>
-  </div>
   <div id="transition-glow"></div>
 
   <div id="canvas-container"></div>
 
+  <!-- Top-right text card -->
   <div id="info-panel">
-    <div id="caption">SYSTEM_IDLE // READY</div>
+    <div id="caption"></div>
   </div>
 
-  <div id="scroll-indicator">
-    <nav id="progress-nav" aria-label="Artwork sections"></nav>
-  </div>
+  <!-- Left-side section navigator -->
+  <nav id="progress-nav" class="integrated-nav" aria-label="Artwork sections">
+    <div class="nav-track" aria-hidden="true">
+      <div class="nav-indicator"></div>
+    </div>
+    <ul class="nav-labels">
+      <li><a href="#s1">1. Resonator</a></li>
+      <li><a href="#s2">2. Quantum</a></li>
+      <li><a href="#s3">3. Halvorsen</a></li>
+      <li><a href="#s4">4. Fractal</a></li>
+      <li><a href="#s5">5. Neural Aviary</a></li>
+      <li><a href="#s6">6. Constellation</a></li>
+      <li><a href="#s7">7. Rose</a></li>
+      <li><a href="#s8">8. Scribble</a></li>
+      <li><a href="#s9">9. Aizawa</a></li>
+      <li><a href="#s10">10. Fractured Web</a></li>
+    </ul>
+  </nav>
 
+  <!-- front page -->
   <section class="active" id="intro">
     <div class="panel intro-panel">
       <h1 id="intro-title">DH 6018<br>Assignment 1</h1>
-      <p class="artist-credit">John Smith</p>
-      <div class="tech-note"><span class="down-arrows" aria-hidden="true">↓</span> Scroll to initialize <span class="down-arrows" aria-hidden="true">↓</span></div>
-      <div class="preview-rail" aria-label="Quick jump to studies">
-        <a class="preview-link" href="#s1" data-target="s1"><span class="preview-sheen" aria-hidden="true"></span><span class="num">01</span><span class="name">Rose</span></a>
-        <a class="preview-link" href="#s2" data-target="s2"><span class="preview-sheen" aria-hidden="true"></span><span class="num">02</span><span class="name">Resonator</span></a>
-        <a class="preview-link" href="#s3" data-target="s3"><span class="preview-sheen" aria-hidden="true"></span><span class="num">03</span><span class="name">Loom</span></a>
-        <a class="preview-link" href="#s4" data-target="s4"><span class="preview-sheen" aria-hidden="true"></span><span class="num">04</span><span class="name">Quantum</span></a>
-        <a class="preview-link" href="#s5" data-target="s5"><span class="preview-sheen" aria-hidden="true"></span><span class="num">05</span><span class="name">Neural Aviary</span></a>
-        <a class="preview-link" href="#s6" data-target="s6"><span class="preview-sheen" aria-hidden="true"></span><span class="num">06</span><span class="name">Constellation</span></a>
-        <a class="preview-link" href="#s7" data-target="s7"><span class="preview-sheen" aria-hidden="true"></span><span class="num">07</span><span class="name">Molnar</span></a>
-        <a class="preview-link" href="#s8" data-target="s8"><span class="preview-sheen" aria-hidden="true"></span><span class="num">08</span><span class="name">Scribble</span></a>
-        <a class="preview-link" href="#s9" data-target="s9"><span class="preview-sheen" aria-hidden="true"></span><span class="num">09</span><span class="name">Ribbon</span></a>
-        <a class="preview-link" href="#s10" data-target="s10"><span class="preview-sheen" aria-hidden="true"></span><span class="num">10</span><span class="name">Fractured Web</span></a>
-        <a class="preview-link" href="#s11" data-target="s11"><span class="preview-sheen" aria-hidden="true"></span><span class="num">11</span><span class="name">Iso Pillars</span></a>
-      </div>
+      <p class="artist-credit">Guang Yang</p>
+      <div class="tech-note"><span class="down-arrows" aria-hidden="true">↓</span> Scroll to initialise <span class="down-arrows" aria-hidden="true">↓</span></div>
     </div>
   </section>
 
-  <section id="s1" data-mode="1" data-label="01 // Rose" data-meta="Polar geometry • mouse mapped"></section>
-  <section id="s2" data-mode="2" data-label="02 // Chromatic Resonator" data-meta="3D harmonic lines • amplitude + click-invert reactive"></section>
-  <section id="s3" data-mode="3" data-label="03 // Loom" data-meta="Recursive weaving • density control"></section>
-  <section id="s4" data-mode="4" data-label="04 // Quantum" data-meta="Lissajous orbit • trail memory"></section>
-  <section id="s5" data-mode="5" data-label="05 // The Neural Aviary" data-meta="Emergent flux • synaptic particle trails"></section>
-  <section id="s6" data-mode="6" data-label="06 // Constellation" data-meta="Network proximity • luminous segments"></section>
-  <section id="s7" data-mode="7" data-label="07 // Molnar Study" data-meta="Structured quadrilaterals • click to regenerate"></section>
-  <section id="s8" data-mode="8" data-label="08 // Scribble Grid" data-meta="Rotated line stacks • button + mouse reactive"></section>
-  <section id="s9" data-mode="9" data-label="09 // Ribbon Surface" data-meta="Parametric WEBGL ribbon • orbit + color drift"></section>
-  <section id="s10" data-mode="10" data-label="10 // Fractured Web" data-meta="Geometric facets • click to regenerate"></section>
-  <section id="s11" data-mode="11" data-label="11 // Isometric Pillar Wave" data-meta="WEBGL heightfield • isometric wave motion"></section>
-  <button id="regenerate-molnar-btn" class="regenerate-btn" type="button">Regenerate Molnar Study</button>
-  <aside id="scribble-controls" aria-label="Scribble Grid controls">
-    <h3>Scribble Controls</h3>
-    <div class="scribble-control-row">
-      <div class="scribble-control-meta">
-        <label for="scribble-randomness">Randomness</label>
-        <span id="scribble-randomness-value">55%</span>
+  <!-- Scroll sections: each data-mode maps to one artwork in main.js -->
+  <section id="s1" data-mode="1" data-label="1. Resonator" data-meta="3D harmonic lines • amplitude + click-invert reactive"></section>
+  <section id="s2" data-mode="2" data-label="2. Quantum" data-meta="Lissajous orbit • trail memory"></section>
+  <section id="s3" data-mode="3" data-label="3. Halvorsen" data-meta="Chaotic attractor • high-speed additive trails"></section>
+  <section id="s4" data-mode="4" data-label="4. Fractal Lattice" data-meta="Recursive 3D fractal • luminous depth lattice"></section>
+  <section id="s5" data-mode="5" data-label="5. The Neural Aviary" data-meta="Emergent flux • synaptic particle trails"></section>
+  <section id="s6" data-mode="6" data-label="6. Constellation" data-meta="Network proximity • luminous segments"></section>
+  <section id="s7" data-mode="7" data-label="7. Rose" data-meta="Polar geometry • mouse mapped"></section>
+  <section id="s8" data-mode="8" data-label="8. Scribble Grid" data-meta="Rotated line stacks • button + mouse reactive"></section>
+  <section id="s9" data-mode="9" data-label="9. Aizawa Attractor" data-meta="Chaotic particle strands • additive 3D orbit"></section>
+  <section id="s10" data-mode="10" data-label="10. Fractured Web" data-meta="Geometric facets • click to regenerate"></section>
+
+  <!-- Artwork-specific control panels-->
+  <aside id="rose-controls" aria-label="Rose controls">
+    <h3>Controls</h3>
+    <div class="rose-control-row">
+      <div class="rose-control-meta">
+        <label for="rose-cool-hue">Inner Hue</label>
+        <span id="rose-cool-hue-value">196</span>
       </div>
-      <input id="scribble-randomness" type="range" min="0" max="100" step="1" value="55" />
+      <input id="rose-cool-hue" type="range" min="0" max="360" step="1" value="196" />
     </div>
+    <div class="rose-control-row">
+      <div class="rose-control-meta">
+        <label for="rose-warm-hue">Outer Hue</label>
+        <span id="rose-warm-hue-value">338</span>
+      </div>
+      <input id="rose-warm-hue" type="range" min="0" max="360" step="1" value="338" />
+    </div>
+  </aside>
+  <aside id="scribble-controls" aria-label="Scribble Grid controls">
+    <h3>Controls</h3>
     <div class="scribble-control-row">
       <div class="scribble-control-meta">
         <label for="scribble-density">Line Density</label>
@@ -81,25 +93,91 @@
     </div>
     <div class="scribble-control-row">
       <div class="scribble-control-meta">
+        <label for="scribble-opacity">Line Opacity</label>
+        <span id="scribble-opacity-value">36</span>
+      </div>
+      <input id="scribble-opacity" type="range" min="16" max="70" step="1" value="36" />
+    </div>
+    <div class="scribble-control-row">
+      <div class="scribble-control-meta">
         <label for="scribble-texture">Paper Grain</label>
         <span id="scribble-texture-value">3000</span>
       </div>
-      <input id="scribble-texture" type="range" min="300" max="6000" step="50" value="3000" />
+      <input id="scribble-texture" type="range" min="300" max="12000" step="100" value="3000" />
+    </div>
+    <div class="scribble-control-row">
+      <div class="scribble-control-meta">
+        <label for="scribble-tilt">Rotation Spread</label>
+        <span id="scribble-tilt-value">100%</span>
+      </div>
+      <input id="scribble-tilt" type="range" min="60" max="160" step="1" value="100" />
+    </div>
+  </aside>
+  <aside id="fractal-controls" aria-label="Fractal controls">
+    <h3>Controls</h3>
+    <div class="fractal-control-row">
+      <div class="fractal-control-meta">
+        <label for="fractal-depth">Fractal Depth</label>
+        <span id="fractal-depth-value">3</span>
+      </div>
+      <input id="fractal-depth" type="range" min="0" max="5" step="1" value="3" />
+    </div>
+    <div class="fractal-control-row">
+      <div class="fractal-control-meta">
+        <label for="fractal-rot-x">Rotation X</label>
+        <span id="fractal-rot-x-value">0.010</span>
+      </div>
+      <input id="fractal-rot-x" type="range" min="0" max="0.05" step="0.001" value="0.01" />
+    </div>
+    <div class="fractal-control-row">
+      <div class="fractal-control-meta">
+        <label for="fractal-rot-y">Rotation Y</label>
+        <span id="fractal-rot-y-value">0.015</span>
+      </div>
+      <input id="fractal-rot-y" type="range" min="0" max="0.05" step="0.001" value="0.015" />
+    </div>
+    <div class="fractal-control-row">
+      <div class="fractal-control-meta">
+        <label for="fractal-hue">Base Hue</label>
+        <span id="fractal-hue-value">200</span>
+      </div>
+      <input id="fractal-hue" type="range" min="0" max="360" step="1" value="200" />
+    </div>
+    <div class="fractal-control-row">
+      <div class="fractal-control-meta">
+        <label for="fractal-gap">Cube Gap</label>
+        <span id="fractal-gap-value">1.00</span>
+      </div>
+      <input id="fractal-gap" type="range" min="1" max="2" step="0.05" value="1" />
+    </div>
+  </aside>
+  <aside id="resonator-controls" aria-label="Resonator controls">
+    <h3>Controls</h3>
+    <div class="resonator-control-row">
+      <button id="change-resonator-curve" type="button" class="resonator-curve-btn">Change Curve</button>
+      <p id="resonator-curve-name" class="resonator-curve-name">Harmonic Phase</p>
+    </div>
+    <div class="resonator-control-row">
+      <div class="resonator-control-meta">
+        <label for="resonator-hue">Primary Hue</label>
+        <span id="resonator-hue-value">118</span>
+      </div>
+      <input id="resonator-hue" type="range" min="0" max="360" step="1" value="118" />
     </div>
   </aside>
 
-  <script src="studies/rose.js"></script>
-  <script src="studies/wave.js"></script>
-  <script src="studies/loom.js"></script>
-  <script src="studies/quantum.js"></script>
-  <script src="studies/neural-aviary.js"></script>
-  <script src="studies/constellation.js"></script>
-  <script src="studies/molnar.js"></script>
-  <script src="studies/scribble.js"></script>
-  <script src="studies/ribbon.js"></script>
-  <script src="studies/fractured-web.js"></script>
-  <script src="studies/isometric-pillars.js"></script>
-  <script src="sketch.js"></script>
+  <!-- Load JavaScript files -->
+  <script src="artworks/rose.js"></script>
+  <script src="artworks/resonator.js"></script>
+  <script src="artworks/quantum.js"></script>
+  <script src="artworks/neural-aviary.js"></script>
+  <script src="artworks/constellation.js"></script>
+  <script src="artworks/molnar.js"></script>
+  <script src="artworks/scribble.js"></script>
+  <script src="artworks/fractal.js"></script>
+  <script src="artworks/fractured-web.js"></script>
+  <script src="artworks/aizawa-attractor.js"></script>
+  <script src="main.js"></script>
   <script src="gsap-controller.js"></script>
 
 </body>
