@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mathematical Art Experiment</title>
+  <link rel="stylesheet" href="styles.css" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
+</head>
+
+<body>
+  <div class="grain"></div>
+  <div class="frame-lines"></div>
+  <div id="transition-glow"></div>
+
+  <div id="canvas-container"></div>
+
+  <!-- Top-right text card -->
+  <div id="info-panel">
+    <div id="caption"></div>
+  </div>
+
+  <!-- Left-side section navigator -->
+  <nav id="progress-nav" class="integrated-nav" aria-label="Artwork sections">
+    <div class="nav-track" aria-hidden="true">
+      <div class="nav-indicator"></div>
+    </div>
+    <ul class="nav-labels">
+      <li>
+        <a href="#s1" class="glow-nav-btn">
+          <div class="glow-bg"></div>
+          <div class="glow-btn-content">1. Resonator</div>
+        </a>
+      </li>
+      <li>
+        <a href="#s2" class="glow-nav-btn">
+          <div class="glow-bg"></div>
+          <div class="glow-btn-content">2. Fractal</div>
+        </a>
+      </li>
+      <li>
+        <a href="#s3" class="glow-nav-btn">
+          <div class="glow-bg"></div>
+          <div class="glow-btn-content">3. Rose</div>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- front page -->
+  <section class="active" id="intro">
+    <div class="panel intro-panel">
+      <h1 id="intro-title">Mathematical Art<br>Experiment</h1>
+      <p class="artist-credit">John Smith</p>
+      <div class="tech-note"><span class="down-arrows" aria-hidden="true">↓</span> Scroll to initialise <span class="down-arrows" aria-hidden="true">↓</span></div>
+    </div>
+  </section>
+
+  <!-- Scroll sections: each data-mode maps to one artwork in main.js -->
+  <section id="s1" data-mode="1" data-label="1. Resonator" data-meta="3D harmonic lines • amplitude + click-invert reactive"></section>
+  <section id="s2" data-mode="2" data-label="2. Fractal" data-meta="Recursive 3D fractal • luminous depth lattice"></section>
+  <section id="s3" data-mode="3" data-label="3. Rose" data-meta="Polar geometry • mouse mapped"></section>
+
+  <!-- Artwork-specific control panels-->
+  <aside id="resonator-controls" aria-label="Resonator controls">
+    <h3>Controls</h3>
+    <div class="resonator-control-row">
+      <button id="change-resonator-curve" type="button" class="resonator-curve-btn">Change Curve</button>
+      <p id="resonator-curve-name" class="resonator-curve-name">Harmonic Phase</p>
+    </div>
+    <div class="resonator-control-row">
+      <div class="resonator-control-meta">
+        <label for="resonator-hue">Primary Hue</label>
+        <span id="resonator-hue-value">118</span>
+      </div>
+      <input id="resonator-hue" type="range" min="0" max="360" step="1" value="118" />
+    </div>
+    <div class="resonator-control-row">
+      <button id="save-resonator-screenshot" type="button" class="resonator-curve-btn" style="width: 100%;">Save Screenshot</button>
+    </div>
+  </aside>
+
+  <aside id="fractal-controls" aria-label="Fractal controls">
+    <h3>Controls</h3>
+    <div class="fractal-control-row">
+      <div class="fractal-control-meta">
+        <label for="fractal-depth">Fractal Depth</label>
+        <span id="fractal-depth-value">3</span>
+      </div>
+      <input id="fractal-depth" type="range" min="0" max="5" step="1" value="3" />
+    </div>
+    <div class="fractal-control-row">
+      <div class="fractal-control-meta">
+        <label for="fractal-rot-x">Rotation X</label>
+        <span id="fractal-rot-x-value">0.010</span>
+      </div>
+      <input id="fractal-rot-x" type="range" min="0" max="0.05" step="0.001" value="0.01" />
+    </div>
+    <div class="fractal-control-row">
+      <div class="fractal-control-meta">
+        <label for="fractal-rot-y">Rotation Y</label>
+        <span id="fractal-rot-y-value">0.015</span>
+      </div>
+      <input id="fractal-rot-y" type="range" min="0" max="0.05" step="0.001" value="0.015" />
+    </div>
+    <div class="fractal-control-row">
+      <div class="fractal-control-meta">
+        <label for="fractal-hue">Base Hue</label>
+        <span id="fractal-hue-value">200</span>
+      </div>
+      <input id="fractal-hue" type="range" min="0" max="360" step="1" value="200" />
+    </div>
+    <div class="fractal-control-row">
+      <div class="fractal-control-meta">
+        <label for="fractal-gap">Cube Gap</label>
+        <span id="fractal-gap-value">1.00</span>
+      </div>
+      <input id="fractal-gap" type="range" min="1" max="2" step="0.05" value="1" />
+    </div>
+  </aside>
+
+  <aside id="rose-controls" aria-label="Rose controls">
+    <h3>Controls</h3>
+    <div class="rose-control-row">
+      <div class="rose-control-meta">
+        <label for="rose-cool-hue">Inner Hue</label>
+        <span id="rose-cool-hue-value">196</span>
+      </div>
+      <input id="rose-cool-hue" type="range" min="0" max="360" step="1" value="196" />
+    </div>
+    <div class="rose-control-row">
+      <div class="rose-control-meta">
+        <label for="rose-warm-hue">Outer Hue</label>
+        <span id="rose-warm-hue-value">338</span>
+      </div>
+      <input id="rose-warm-hue" type="range" min="0" max="360" step="1" value="338" />
+    </div>
+  </aside>
+
+  <!-- Load JavaScript files -->
+  <script src="artworks/resonator.js"></script>
+  <script src="artworks/fractal.js"></script>
+  <script src="artworks/rose.js"></script>
+  <script src="main.js"></script>
+  <script src="gsap-controller.js"></script>
+
+</body>
+</html>
